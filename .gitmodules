@@ -1,0 +1,21 @@
+[submodule "corrade"]
+	path = corrade
+	url = https://github.com/mosra/corrade.git
+[submodule "modules/VTNCRW-LIB"]
+	path = modules/VTNCRW-LIB
+	url = https://github.com/Day-OS/VTNCRW-LIB.git
+[submodule "magnum"]
+	path = magnum
+	url = https://github.com/mosra/magnum.git
+[submodule "imgui"]
+	path = imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "magnum-integration"]
+	path = magnum-integration
+	url = https://github.com/mosra/magnum-integration
+[submodule "modules/nativefiledialog-extended"]
+	path = modules/nativefiledialog-extended
+	url = https://github.com/btzy/nativefiledialog-extended.git
+[submodule "toolchains"]
+	path = toolchains
+	url = git://github.com/mosra/toolchains

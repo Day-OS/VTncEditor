@@ -1,3 +1,10 @@
+build/
+build-emscripten-wasm/*
+!build-emscripten-wasm/bin
+*.kdev4
+*~
+SDL2-2.0.10/
+
 # Prerequisites
 *.d
 
