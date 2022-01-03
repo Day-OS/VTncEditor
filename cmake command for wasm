@@ -1,1 +1,0 @@
-cmake .. \ -DCMAKE_TOOLCHAIN_FILE="..\toolchains\generic\Emscripten-wasm.cmake" -DCORRADE_TARGET_EMSCRIPTEN=true -G "MinGW Makefiles" -DEMSCRIPTEN_PREFIX="C:/emsdk-3.1.0/upstream/emscripten" -DCORRADE_RC_EXECUTABLE="../build/Debug/bin/corrade-rc.exe" -DWITH_EMSCRIPTENAPPLICATION=ON
