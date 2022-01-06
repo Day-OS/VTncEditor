@@ -6,8 +6,14 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/magnum/src",
                 "${workspaceFolder}/corrade/src",
-                "${workspaceFolder}/corrade/src"
+                "${workspaceFolder}/corrade/src",
+                "C:/emsdk-3.1.0/upstream/emscripten/**",
+                "C:\\emsdk-3.1.0\\upstream\\emscripten\\system\\include/*"
             ],
+            "browse": {
+              "limitSymbolsToIncludedHeaders": true,
+              "databaseFilename": ""
+            },
             "defines": [
                 "_DEBUG",
                 "UNICODE",

@@ -4,6 +4,7 @@
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/ImGuiIntegration/Context.hpp>
 #include "vtncrw.h"
+#include "iostream"
 
 #ifdef CORRADE_TARGET_ANDROID
 #include <Magnum/Platform/AndroidApplication.h>

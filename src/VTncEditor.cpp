@@ -30,7 +30,7 @@ void VTncEditor::drawEvent() {
     ImGui::Text("test loading folder stuff: ");
     if (ImGui::Button("wassuuuuuuuuuuup man"))
     {
-        
+        FileDialog.VTncEditorOpen();
     };
     ImGui::Text("outPath not defined yet :)");
     ImGui::End();
@@ -94,6 +94,7 @@ void VTncEditor::viewportEvent(ViewportEvent& event) {
     _imgui.relayout(Magnum::Vector2{event.windowSize()}/event.dpiScaling(),
         event.windowSize(), event.framebufferSize());
 }
+
 void VTncEditor::keyPressEvent(KeyEvent& event) {if(_imgui.handleKeyPressEvent(event)) return;}
 void VTncEditor::keyReleaseEvent(KeyEvent& event) {if(_imgui.handleKeyReleaseEvent(event)) return;}
 void VTncEditor::mousePressEvent(MouseEvent& event) {if(_imgui.handleMousePressEvent(event)) return;}
@@ -101,5 +102,18 @@ void VTncEditor::mouseReleaseEvent(MouseEvent& event) {if(_imgui.handleMouseRele
 void VTncEditor::mouseMoveEvent(MouseMoveEvent& event) {if(_imgui.handleMouseMoveEvent(event)) return;}
 void VTncEditor::mouseScrollEvent(MouseScrollEvent& event) {if(_imgui.handleMouseScrollEvent(event)) {/* Prevent scrolling the page */ event.setAccepted(); return;}}
 void VTncEditor::textInputEvent(TextInputEvent& event) {if(_imgui.handleTextInputEvent(event)) return;}
+
+
+
+#ifdef CORRADE_TARGET_EMSCRIPTEN
+
+extern "C" EMSCRIPTEN_KEEPALIVE int load_file(uint8_t *buffer, size_t size) {
+    std::cout << "Buffer: " << &buffer << " | Size: " << size << std::endl;
+
+
+    return 1;
+};
+
+#endif
 
 MAGNUM_APPLICATION_MAIN(VTncEditor);

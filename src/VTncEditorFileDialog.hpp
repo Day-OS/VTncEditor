@@ -1,6 +1,11 @@
-#include "iostream"
+#pragma once
+#include "VTncEditorClass.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdollar-in-identifier-extension"
 
-#ifndef CORRADE_TARGET_EMSCRIPTEN
+#ifdef CORRADE_TARGET_EMSCRIPTEN
+    #include "emscripten.h"
+#else
     #include "nfd.hpp"
 #endif
 
@@ -10,21 +15,6 @@ private:
     /* data */
 public:
     VTncEditorFileDialog(/* args */);
+    void VTncEditorOpen();
     ~VTncEditorFileDialog();
 };
-
-VTncEditorFileDialog::VTncEditorFileDialog(/* args */)
-{
-    #ifndef CORRADE_TARGET_EMSCRIPTEN
-    NFD_Init();
-    nfdchar_t *outPath = "?";
-    nfdfilteritem_t filterItem[2] = { { "Source code", "c,cpp,cc" }, { "Headers", "h,hpp" } };
-    nfdresult_t result = NFD_OpenDialog(&outPath, filterItem, 2, NULL);
-    #endif
-
-    std::cout << "LOADEEEEEEEEEEEEEEEEEEEDD!!!";
-}
-
-VTncEditorFileDialog::~VTncEditorFileDialog()
-{
-}

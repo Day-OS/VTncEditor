@@ -1722,15 +1722,16 @@ var tempI64;
 // === Body ===
 
 var ASM_CONSTS = {
-  267844: function($0) {document.title = UTF8ToString($0);},  
- 267881: function($0) {(Module['canvas'].closest('.mn-container') || document.getElementById('container')).className = (['mn-container', AsciiToString($0)]).join(' ');},  
- 268030: function() {var element = Module['keyboardListeningElement'] || document; if(element === document) return 1; if(element === window) return 2; if('id' in element) { var bytes = lengthBytesUTF8(element.id) + 1; var memory = _malloc(bytes); stringToUTF8(element.id, memory, bytes); return memory; } return 0;},  
- 268328: function($0) {Module['canvas'].style.cursor = AsciiToString($0);},  
- 268381: function($0, $1) {var drawEvent = function() { var id = window.requestAnimationFrame(drawEvent); if(!wasmTable.get($0).apply(null, [$1])) { window.cancelAnimationFrame(id); } }; window.requestAnimationFrame(drawEvent);},  
- 268586: function() {var id = Module['canvas'].id; var bytes = lengthBytesUTF8(id) + 1; var memory = _malloc(bytes); stringToUTF8(id, memory, bytes); return memory;},  
- 268734: function() {var match = navigator.userAgent.match(/Firefox\/(\d+)/); if(match) return match[1]|0; return 0;},  
- 268836: function() {var env = ''; if(typeof process !== 'undefined') for(var key in process.env) env += key + '=' + process.env[key] + ''; env += ''; const bytes = lengthBytesUTF8(env) + 1; const memory = _malloc(bytes); stringToUTF8(env, memory, bytes); return memory;},  
- 269094: function($0) {var name = UTF8ToString($0); if(typeof process !== 'undefined' && name in process.env) { var env = process.env[name]; var bytes = lengthBytesUTF8(env) + 1; var memory = _malloc(bytes); stringToUTF8(env, memory, bytes); return memory; } return 0;}
+  267860: function() {var file_selector = document.createElement('input'); file_selector.setAttribute('type', 'file'); file_selector.setAttribute('onchange','open_file(event)'); file_selector.setAttribute('accept','.vtnc'); file_selector.click();},  
+ 268085: function($0) {document.title = UTF8ToString($0);},  
+ 268122: function($0) {(Module['canvas'].closest('.mn-container') || document.getElementById('container')).className = (['mn-container', AsciiToString($0)]).join(' ');},  
+ 268271: function() {var element = Module['keyboardListeningElement'] || document; if(element === document) return 1; if(element === window) return 2; if('id' in element) { var bytes = lengthBytesUTF8(element.id) + 1; var memory = _malloc(bytes); stringToUTF8(element.id, memory, bytes); return memory; } return 0;},  
+ 268569: function($0) {Module['canvas'].style.cursor = AsciiToString($0);},  
+ 268622: function($0, $1) {var drawEvent = function() { var id = window.requestAnimationFrame(drawEvent); if(!wasmTable.get($0).apply(null, [$1])) { window.cancelAnimationFrame(id); } }; window.requestAnimationFrame(drawEvent);},  
+ 268827: function() {var id = Module['canvas'].id; var bytes = lengthBytesUTF8(id) + 1; var memory = _malloc(bytes); stringToUTF8(id, memory, bytes); return memory;},  
+ 268975: function() {var match = navigator.userAgent.match(/Firefox\/(\d+)/); if(match) return match[1]|0; return 0;},  
+ 269077: function() {var env = ''; if(typeof process !== 'undefined') for(var key in process.env) env += key + '=' + process.env[key] + ''; env += ''; const bytes = lengthBytesUTF8(env) + 1; const memory = _malloc(bytes); stringToUTF8(env, memory, bytes); return memory;},  
+ 269335: function($0) {var name = UTF8ToString($0); if(typeof process !== 'undefined' && name in process.env) { var env = process.env[name]; var bytes = lengthBytesUTF8(env) + 1; var memory = _malloc(bytes); stringToUTF8(env, memory, bytes); return memory; } return 0;}
 };
 
 
@@ -6788,6 +6789,12 @@ var asm = createWasm();
 var ___wasm_call_ctors = Module["___wasm_call_ctors"] = createExportWrapper("__wasm_call_ctors");
 
 /** @type {function(...*):?} */
+var _print = Module["_print"] = createExportWrapper("print");
+
+/** @type {function(...*):?} */
+var _load_file = Module["_load_file"] = createExportWrapper("load_file");
+
+/** @type {function(...*):?} */
 var _main = Module["_main"] = createExportWrapper("main");
 
 /** @type {function(...*):?} */
@@ -6849,7 +6856,7 @@ var dynCall_iiiiiijj = Module["dynCall_iiiiiijj"] = createExportWrapper("dynCall
 
 if (!Object.getOwnPropertyDescriptor(Module, "intArrayFromString")) Module["intArrayFromString"] = function() { abort("'intArrayFromString' was not exported. add it to EXPORTED_RUNTIME_METHODS (see the FAQ)") };
 if (!Object.getOwnPropertyDescriptor(Module, "intArrayToString")) Module["intArrayToString"] = function() { abort("'intArrayToString' was not exported. add it to EXPORTED_RUNTIME_METHODS (see the FAQ)") };
-if (!Object.getOwnPropertyDescriptor(Module, "ccall")) Module["ccall"] = function() { abort("'ccall' was not exported. add it to EXPORTED_RUNTIME_METHODS (see the FAQ)") };
+Module["ccall"] = ccall;
 if (!Object.getOwnPropertyDescriptor(Module, "cwrap")) Module["cwrap"] = function() { abort("'cwrap' was not exported. add it to EXPORTED_RUNTIME_METHODS (see the FAQ)") };
 if (!Object.getOwnPropertyDescriptor(Module, "setValue")) Module["setValue"] = function() { abort("'setValue' was not exported. add it to EXPORTED_RUNTIME_METHODS (see the FAQ)") };
 if (!Object.getOwnPropertyDescriptor(Module, "getValue")) Module["getValue"] = function() { abort("'getValue' was not exported. add it to EXPORTED_RUNTIME_METHODS (see the FAQ)") };
