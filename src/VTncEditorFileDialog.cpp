@@ -1,9 +1,13 @@
 #include "VTncEditorFileDialog.hpp"
+#include "fstream"
+#include "ios"
+#include "sys/stat.h"
 
-void VTncEditorFileDialog::VTncEditorOpen() 
+void VTncEditorFileDialog::VTncEditorOpen(char** file) 
 {
     #ifdef CORRADE_TARGET_EMSCRIPTEN      
         EM_ASM(
+        
         var file_selector = document.createElement('input');
         file_selector.setAttribute('type', 'file');
         file_selector.setAttribute('onchange','open_file(event)');
@@ -11,12 +15,22 @@ void VTncEditorFileDialog::VTncEditorOpen()
         file_selector.click();
         );
     #else
-        const char* filename = "hello.txt";
-        const char* text = "Hello world!";
         NFD_Init();
-        nfdchar_t *outPath = "?";
-        nfdfilteritem_t filterItem[2] = { { "Source code", "c,cpp,cc" }, { "Headers", "h,hpp" } };
-        nfdresult_t result = NFD_OpenDialog(&outPath, filterItem, 2, NULL);
+        nfdchar_t *outPath;
+        nfdfilteritem_t filterItem[2] = {{"Visual Template Nicely Compressed", "vtnc" }};
+        /*nfdresult_t result = */NFD_OpenDialog(&outPath, filterItem, 1, NULL);
+        std::fstream filefstream(outPath, std::ios::in | std::ios::binary);
+        if(!filefstream) std::cout << "[ERROR] File could not be loaded!";
+        else{
+            struct stat res;
+            stat(outPath, &res);
+            std::cout << res.st_size;
+            std::cout << *file;
+            char buffer[res.st_size];
+            filefstream.read(buffer, res.st_size);
+            filefstream.close();
+            *file = buffer;
+        }
     #endif
 }
 
@@ -25,7 +39,7 @@ VTncEditorFileDialog::~VTncEditorFileDialog()
     
 }
 
-VTncEditorFileDialog::VTncEditorFileDialog(/* args */) 
+VTncEditorFileDialog::VTncEditorFileDialog() 
 {
     
 }

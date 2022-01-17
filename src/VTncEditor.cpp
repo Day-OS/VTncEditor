@@ -15,7 +15,7 @@ VTncEditor::VTncEditor(const Arguments& arguments): Magnum::Platform::Applicatio
         setMinimalLoopPeriod(16);
     #endif
 }
-
+char* text = "outPath not defined yet :)";
 void VTncEditor::drawEvent() {
     Magnum::GL::defaultFramebuffer.clear(Magnum::GL::FramebufferClear::Color);
     _imgui.newFrame();
@@ -30,9 +30,9 @@ void VTncEditor::drawEvent() {
     ImGui::Text("test loading folder stuff: ");
     if (ImGui::Button("wassuuuuuuuuuuup man"))
     {
-        FileDialog.VTncEditorOpen();
+        FileDialog.VTncEditorOpen(&text);
     };
-    ImGui::Text("outPath not defined yet :)");
+    ImGui::Text(text);
     ImGui::End();
 
     /* 1. Show a simple window.
@@ -108,11 +108,18 @@ void VTncEditor::textInputEvent(TextInputEvent& event) {if(_imgui.handleTextInpu
 #ifdef CORRADE_TARGET_EMSCRIPTEN
 
 extern "C" EMSCRIPTEN_KEEPALIVE int load_file(uint8_t *buffer, size_t size) {
+    //I'M DUPLICATED IN VTncEditorFileDialog.cpp just for now, remember to delete me later!!!
+    VTNCRW VTNCCLASS;
+    std::vector<unsigned char> filevector(buffer, buffer + size);
+    FileDialog.LoadedFile = VTNCCLASS.read(filevector);;
     std::cout << "Buffer: " << &buffer << " | Size: " << size << std::endl;
-
+    std::cout << "IS VTNC???: " << std::hex << ('0' + int(FileDialog.LoadedFile.framesQuantity)) << std::endl;
+    text = reinterpret_cast<char*>('0' + int(FileDialog.LoadedFile.framesQuantity));
 
     return 1;
 };
+#else
+
 
 #endif
 

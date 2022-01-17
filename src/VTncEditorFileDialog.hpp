@@ -14,7 +14,8 @@ class VTncEditorFileDialog
 private:
     /* data */
 public:
+    VTNCFile LoadedFile;
     VTncEditorFileDialog(/* args */);
-    void VTncEditorOpen();
+    void VTncEditorOpen(char** file);
     ~VTncEditorFileDialog();
 };
