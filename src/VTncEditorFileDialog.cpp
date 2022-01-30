@@ -24,12 +24,16 @@ void VTncEditorFileDialog::VTncEditorOpen(char** file)
         else{
             struct stat res;
             stat(outPath, &res);
-            std::cout << res.st_size;
-            std::cout << *file;
             char buffer[res.st_size];
             filefstream.read(buffer, res.st_size);
-            filefstream.close();
-            *file = buffer;
+            std::vector<unsigned char> filevector(buffer, buffer + res.st_size);
+            *file = outPath;
+            VTNCRW VTNCCLASS;
+            this->LoadedFile = VTNCCLASS.read(filevector);
+            std::cout << this->LoadedFile.isFile << std::endl;
+            //std::vector<unsigned char> filevector(buffer, buffer + res.st_size);
+            this->LoadedFile = VTNCCLASS.read(VTNCCLASS.write(this->LoadedFile));
+            std::cout << this->LoadedFile.isFile << std::endl;
         }
     #endif
 }
@@ -42,4 +46,16 @@ VTncEditorFileDialog::~VTncEditorFileDialog()
 VTncEditorFileDialog::VTncEditorFileDialog() 
 {
     
+}
+
+void VTncEditorFileDialog::WASMCallback_load_file(uint8_t *buffer, size_t size, char** currentfilepath) 
+{
+    //I'M DUPLICATED IN VTncEditorFileDialog.cpp just for now, remember to delete me later!!!
+    VTNCRW VTNCCLASS;
+    std::vector<unsigned char> filevector(buffer, buffer + size);
+    this->LoadedFile = VTNCCLASS.read(filevector);
+    std::cout << "Buffer: " << &buffer << " | Size: " << size << std::endl;
+    std::cout << "IS VTNC???: " << std::hex << ('0' + int(this->LoadedFile.framesQuantity)) << std::endl;
+    *currentfilepath = "File loaded (THIS IS NOT AN ERROR: Couldn't put filename because the dev is stupid)";
+    std::cout << "KKKKKKKKKK :)";
 }

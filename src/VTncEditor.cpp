@@ -6,7 +6,6 @@ VTncEditorFileDialog FileDialog;
 VTncEditor::VTncEditor(const Arguments& arguments): Magnum::Platform::Application{arguments,
     Configuration{}.setTitle("Magnum ImGui Example").setWindowFlags(Configuration::WindowFlag::Resizable)}
 {
-    //nfdresult_t result =  NFD::OpenDialog(outPath, filterItem, 2);
     _imgui = Magnum::ImGuiIntegration::Context(Magnum::Vector2{windowSize()}/dpiScaling(),windowSize(), framebufferSize());
     Magnum::GL::Renderer::setBlendEquation(Magnum::GL::Renderer::BlendEquation::Add, Magnum::GL::Renderer::BlendEquation::Add);
     Magnum::GL::Renderer::setBlendFunction(Magnum::GL::Renderer::BlendFunction::SourceAlpha, Magnum::GL::Renderer::BlendFunction::OneMinusSourceAlpha);
@@ -14,25 +13,51 @@ VTncEditor::VTncEditor(const Arguments& arguments): Magnum::Platform::Applicatio
     #if !defined(MAGNUM_TARGET_WEBGL) && !defined(CORRADE_TARGET_ANDROID)
         setMinimalLoopPeriod(16);
     #endif
+    
 }
-char* text = "outPath not defined yet :)";
+char* currentfilepath = "outPath not defined yet :)";
+
 void VTncEditor::drawEvent() {
+    
     Magnum::GL::defaultFramebuffer.clear(Magnum::GL::FramebufferClear::Color);
     _imgui.newFrame();
-    /* Enable text input */
+    /* Enable currentfilepath input */
     if(ImGui::GetIO().WantTextInput && !isTextInputActive())
         startTextInput();
     else if(!ImGui::GetIO().WantTextInput && isTextInputActive())
         stopTextInput();
 
+    ImGui::Begin(
+			"Editor",
+			/*p_open=*/nullptr,
+			ImGuiWindowFlags_MenuBar |
+			ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoMove |
+			ImGuiWindowFlags_NoCollapse |
+			ImGuiWindowFlags_NoBringToFrontOnFocus
+		);
         
+        if(ImGui::BeginMainMenuBar()){
+            if(ImGui::BeginMenu("File")){
+                if(ImGui::MenuItem("Load")){
+                    FileDialog.VTncEditorOpen(&currentfilepath);    
+                    std::cout << currentfilepath << std::endl;
+                }
+            ImGui::EndMenu();
+            }
+        ImGui::EndMainMenuBar();
+        }
+    ImGui::End();
+
+
     ImGui::Begin("DEBUGGERSONS");
     ImGui::Text("test loading folder stuff: ");
     if (ImGui::Button("wassuuuuuuuuuuup man"))
     {
-        FileDialog.VTncEditorOpen(&text);
+        FileDialog.VTncEditorOpen(&currentfilepath);    
+        std::cout << currentfilepath << std::endl;
     };
-    ImGui::Text(text);
+    ImGui::Text(currentfilepath);
     ImGui::End();
 
     /* 1. Show a simple window.
@@ -108,14 +133,7 @@ void VTncEditor::textInputEvent(TextInputEvent& event) {if(_imgui.handleTextInpu
 #ifdef CORRADE_TARGET_EMSCRIPTEN
 
 extern "C" EMSCRIPTEN_KEEPALIVE int load_file(uint8_t *buffer, size_t size) {
-    //I'M DUPLICATED IN VTncEditorFileDialog.cpp just for now, remember to delete me later!!!
-    VTNCRW VTNCCLASS;
-    std::vector<unsigned char> filevector(buffer, buffer + size);
-    FileDialog.LoadedFile = VTNCCLASS.read(filevector);;
-    std::cout << "Buffer: " << &buffer << " | Size: " << size << std::endl;
-    std::cout << "IS VTNC???: " << std::hex << ('0' + int(FileDialog.LoadedFile.framesQuantity)) << std::endl;
-    text = reinterpret_cast<char*>('0' + int(FileDialog.LoadedFile.framesQuantity));
-
+    FileDialog.WASMCallback_load_file(buffer, size, &currentfilepath);
     return 1;
 };
 #else

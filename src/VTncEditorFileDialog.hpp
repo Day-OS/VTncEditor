@@ -16,6 +16,7 @@ private:
 public:
     VTNCFile LoadedFile;
     VTncEditorFileDialog(/* args */);
+    void WASMCallback_load_file(uint8_t *buffer, size_t size, char** currentfilepath);
     void VTncEditorOpen(char** file);
     ~VTncEditorFileDialog();
 };
