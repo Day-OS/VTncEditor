@@ -30,10 +30,9 @@ void VTncEditorFileDialog::VTncEditorOpen(char** file)
             *file = outPath;
             VTNCRW VTNCCLASS;
             this->LoadedFile = VTNCCLASS.read(filevector);
-            std::cout << this->LoadedFile.isFile << std::endl;
-            //std::vector<unsigned char> filevector(buffer, buffer + res.st_size);
-            this->LoadedFile = VTNCCLASS.read(VTNCCLASS.write(this->LoadedFile));
-            std::cout << this->LoadedFile.isFile << std::endl;
+            std::fstream ff("C:/Users/danie/Documents/GitHub/VTncEditor/modules/VTNCRW-LIB/filestructure/cellbit.vtnc", std::ios::out | std::ios::binary);
+            ff.write(reinterpret_cast<const char*>(VTNCCLASS.write(this->LoadedFile).data()), 4);
+            ff.close();
         }
     #endif
 }
