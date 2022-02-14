@@ -13,6 +13,7 @@ VTncEditor::VTncEditor(const Arguments& arguments): Magnum::Platform::Applicatio
     #if !defined(MAGNUM_TARGET_WEBGL) && !defined(CORRADE_TARGET_ANDROID)
         setMinimalLoopPeriod(16);
     #endif
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     
 }
 char* currentfilepath = "outPath not defined yet :)";
@@ -27,6 +28,7 @@ void VTncEditor::drawEvent() {
     else if(!ImGui::GetIO().WantTextInput && isTextInputActive())
         stopTextInput();
 
+
     ImGui::Begin(
 			"Editor",
 			/*p_open=*/nullptr,
@@ -40,7 +42,11 @@ void VTncEditor::drawEvent() {
         if(ImGui::BeginMainMenuBar()){
             if(ImGui::BeginMenu("File")){
                 if(ImGui::MenuItem("Load")){
-                    FileDialog.VTncEditorOpen(&currentfilepath);    
+                    FileDialog.VTncEditorOpen(&currentfilepath, VTncEditorFileDialog::Mode::Load);    
+                    std::cout << currentfilepath << std::endl;
+                }
+                if(ImGui::MenuItem("Save As")){
+                    FileDialog.VTncEditorOpen(&currentfilepath, VTncEditorFileDialog::Mode::Save);    
                     std::cout << currentfilepath << std::endl;
                 }
             ImGui::EndMenu();
@@ -49,23 +55,10 @@ void VTncEditor::drawEvent() {
         }
     ImGui::End();
 
-
-    ImGui::Begin("DEBUGGERSONS");
-    ImGui::Text("test loading folder stuff: ");
-    if (ImGui::Button("wassuuuuuuuuuuup man"))
-    {
-        FileDialog.VTncEditorOpen(&currentfilepath);    
-        std::cout << currentfilepath << std::endl;
-    };
-    ImGui::Text(currentfilepath);
-    ImGui::End();
-
-    /* 1. Show a simple window.
-       Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appear in
-       a window called "Debug" automatically */
     {
         
         ImGui::Text("Hello, world!");
+        ImGui::ColorPicker4("a", &_floatValue);
         ImGui::SliderFloat("Float", &_floatValue, 0.0f, 1.0f);
         if(ImGui::ColorEdit3("Clear Color", _clearColor.data()))
             Magnum::GL::Renderer::setClearColor(_clearColor);
@@ -75,16 +68,6 @@ void VTncEditor::drawEvent() {
             1000.0/Magnum::Double(ImGui::GetIO().Framerate), Magnum::Double(ImGui::GetIO().Framerate));
     }
 
-    /* 2. Show another simple window, now using an explicit Begin/End pair */
-    if(_showAnotherWindow) {
-        ImGui::SetNextWindowSize(ImVec2(500, 100), ImGuiCond_FirstUseEver);
-        ImGui::Begin("Another Window", &_showAnotherWindow);
-        ImGui::Text("Hello");
-        ImGui::End();
-    }
-
-    /* 3. Show the ImGui demo window. Most of the sample code is in
-       ImGui::ShowDemoWindow() */
     if(_showDemoWindow) {
         ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
         ImGui::ShowDemoWindow();

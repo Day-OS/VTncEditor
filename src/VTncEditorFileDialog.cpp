@@ -3,7 +3,7 @@
 #include "ios"
 #include "sys/stat.h"
 
-void VTncEditorFileDialog::VTncEditorOpen(char** file) 
+void VTncEditorFileDialog::VTncEditorOpen(char** file, Mode mode) 
 {
     #ifdef CORRADE_TARGET_EMSCRIPTEN      
         EM_ASM(
@@ -18,21 +18,30 @@ void VTncEditorFileDialog::VTncEditorOpen(char** file)
         NFD_Init();
         nfdchar_t *outPath;
         nfdfilteritem_t filterItem[2] = {{"Visual Template Nicely Compressed", "vtnc" }};
-        /*nfdresult_t result = */NFD_OpenDialog(&outPath, filterItem, 1, NULL);
-        std::fstream filefstream(outPath, std::ios::in | std::ios::binary);
-        if(!filefstream) std::cout << "[ERROR] File could not be loaded!";
+
+        //selects which NFD dialog to show (loading or saving)
+        std::fstream filefstream;
+        if (mode == Mode::Load){ NFD_OpenDialog(&outPath, filterItem, 1, NULL); filefstream = std::fstream(outPath, std::ios::in | std::ios::binary);}
+        else{NFD_SaveDialog(&outPath, filterItem, 1, NULL, "VTNCFILE.vtnc");  filefstream = std::fstream(outPath, std::ios::out | std::ios::binary);}
+        
+        if(!filefstream) std::cout << "(VTNCEditor)[ERROR] File could not be loaded!";
         else{
-            struct stat res;
-            stat(outPath, &res);
-            char buffer[res.st_size];
-            filefstream.read(buffer, res.st_size);
-            std::vector<unsigned char> filevector(buffer, buffer + res.st_size);
-            *file = outPath;
             VTNCRW VTNCCLASS;
-            this->LoadedFile = VTNCCLASS.read(filevector);
-            std::fstream ff("C:/Users/dani/Documents/GitHub/VTncEditor/modules/VTNCRW-LIB/filestructure/outputtest.vtnc", std::ios::out | std::ios::binary);
-            ff.write(reinterpret_cast<const char*>(VTNCCLASS.write(this->LoadedFile).data()), 12020);
-            ff.close();
+            if (mode == Mode::Load)
+            {    
+                struct stat res;
+                stat(outPath, &res);
+                char buffer[res.st_size];
+                filefstream.read(buffer, res.st_size);
+                std::vector<unsigned char> filevector(buffer, buffer + res.st_size);
+                *file = outPath;
+                this->LoadedFile = VTNCCLASS.read(filevector);
+            }
+            else{
+                std::vector<unsigned char> buffertowrite = VTNCCLASS.write(this->LoadedFile);
+                filefstream.write(reinterpret_cast<const char*>(buffertowrite.data()), buffertowrite.size());
+                filefstream.close();    
+            }
         }
     #endif
 }

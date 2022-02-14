@@ -12,11 +12,11 @@
 class VTncEditorFileDialog
 {
 private:
-    /* data */
 public:
+    enum Mode {Load, Save};
     VTNCFile LoadedFile;
-    VTncEditorFileDialog(/* args */);
+    VTncEditorFileDialog();
     void WASMCallback_load_file(uint8_t *buffer, size_t size, char** currentfilepath);
-    void VTncEditorOpen(char** file);
+    void VTncEditorOpen(char** file, Mode mode);
     ~VTncEditorFileDialog();
 };
