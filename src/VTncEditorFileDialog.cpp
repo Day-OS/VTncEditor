@@ -56,14 +56,12 @@ VTncEditorFileDialog::VTncEditorFileDialog()
     
 }
 
-void VTncEditorFileDialog::WASMCallback_load_file(uint8_t *buffer, size_t size, char** currentfilepath) 
+void VTncEditorFileDialog::WASMCallback_load_file(uint8_t *buffer, size_t size) 
 {
-    //I'M DUPLICATED IN VTncEditorFileDialog.cpp just for now, remember to delete me later!!!
     VTNCRW VTNCCLASS;
     std::vector<unsigned char> filevector(buffer, buffer + size);
     this->LoadedFile = VTNCCLASS.read(filevector);
     std::cout << "Buffer: " << &buffer << " | Size: " << size << std::endl;
     std::cout << "IS VTNC???: " << std::hex << ('0' + int(this->LoadedFile.framesQuantity)) << std::endl;
-    *currentfilepath = "File loaded (THIS IS NOT AN ERROR: Couldn't put filename because the dev is stupid)";
     std::cout << "KKKKKKKKKK :)";
 }

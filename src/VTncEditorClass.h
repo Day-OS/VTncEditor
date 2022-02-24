@@ -4,6 +4,7 @@
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/ImGuiIntegration/Context.hpp>
 #include "vtncrw.h"
+#include "imgui_internal.h"
 #include "iostream"
 
 #ifdef CORRADE_TARGET_ANDROID
@@ -35,7 +36,8 @@ class VTncEditor: public Magnum::Platform::Application {
 
     private:
         Magnum::ImGuiIntegration::Context _imgui{Magnum::NoCreate};
-
+        uint8_t currentLayer = 0;
+        bool firstframerendered = false;
         bool _showDemoWindow = true;
         bool _showAnotherWindow = false;
         Magnum::Color4 _clearColor = 0x72909aff_rgbaf;
