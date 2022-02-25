@@ -85,12 +85,22 @@ void VTncEditor::drawEvent() {
     ImGui::Begin("Preview", nullptr, flags1);
         if (FileDialog.LoadedFile.isFile)
         {
+            int currentFrame = 0;
             for (size_t y = 0; y < FileDialog.LoadedFile.layersResolution[this->currentLayer].y; y++){
                 for (size_t x = 0; x < FileDialog.LoadedFile.layersResolution[this->currentLayer].x; x++)
                 {
+                    u8c currentColorIndex =  FileDialog.LoadedFile.Layers[this->currentLayer].framesArray[currentFrame].Pixels[x];
+                    RGBA color = FileDialog.LoadedFile.Colors[currentColorIndex];
                     if(x > 0) ImGui::SameLine();
+                    float pixelButtonSize = 40.0f;
+                    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, pixelButtonSize/2.0f);
+                    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 2.0f);
+                    ImGui::PushStyleColor(ImGuiCol_Button,(ImVec4)ImColor(int(color.R), int(color.G), int(color.B), int(color.A)));
+                    ImGui::PushStyleColor(ImGuiCol_Border,(ImVec4)ImColor(0xFF,0xFF,0xFF,0xFF));
                     ImGui::PushID(x + (y * 1000));
-                    ImGui::Button(" ", ImVec2(20.0f,20.0f));
+                    ImGui::Button(color.A ? " " :"A", ImVec2(pixelButtonSize,pixelButtonSize));
+                    ImGui::PopStyleColor(2);
+                    ImGui::PopStyleVar(2);
                     ImGui::PopID();
                 }
                 ImGui::NewLine();
