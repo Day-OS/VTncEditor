@@ -37,13 +37,16 @@ class VTncEditor: public Magnum::Platform::Application {
     private:
         Magnum::ImGuiIntegration::Context _imgui{Magnum::NoCreate};
         uint8_t currentLayer = 0;
-        uint8_t selectedColor_I = 0;
+        uint8_t selectedColor_I = 255;
         ImVec4 selectedColor;
+        int currentFrame = 0;
+        bool isPlaying = false;
         Magnum::Float _floatValue = 0x72909aff;
         bool _showDemoWindow = true;
         bool _showAnotherWindow = false;
         Magnum::Color4 _clearColor = 0x72909aff_rgbaf;
         enum Theme{
+            Color_Unselected = 0x00,
             Color_Selected = 0xFF
         };
         

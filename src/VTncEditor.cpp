@@ -87,11 +87,10 @@ void VTncEditor::drawEvent() {
 
         if (FileDialog.LoadedFile.isFile)
         {
-            int currentFrame = 0;
             for (size_t y = 0; y < FileDialog.LoadedFile.layersResolution[this->currentLayer].y; y++){
                 for (size_t x = 0; x < FileDialog.LoadedFile.layersResolution[this->currentLayer].x; x++)
                 {
-                    u8c currentColorIndex =  FileDialog.LoadedFile.Layers[this->currentLayer].framesArray[currentFrame].Pixels[x] + (y*FileDialog.LoadedFile.layersResolution[this->currentLayer].y);
+                    u8c currentColorIndex =  FileDialog.LoadedFile.Layers[this->currentLayer].framesArray[currentFrame].Pixels[x + (y*FileDialog.LoadedFile.layersResolution[this->currentLayer].x)];
                     RGBA color = FileDialog.LoadedFile.Colors[currentColorIndex];
                     if(x > 0) ImGui::SameLine();
                     float pixelButtonSize = 40.0f;
@@ -100,7 +99,11 @@ void VTncEditor::drawEvent() {
                     ImGui::PushStyleColor(ImGuiCol_Button,(ImVec4)ImColor(int(color.R), int(color.G), int(color.B), int(color.A)));
                     ImGui::PushStyleColor(ImGuiCol_Border,(ImVec4)ImColor(0xFF,0xFF,0xFF,0xFF));
                     ImGui::PushID(x + (y * FileDialog.LoadedFile.layersResolution[this->currentLayer].y));
-                    ImGui::Button(color.A ? " " :"A", ImVec2(pixelButtonSize,pixelButtonSize));
+                    if (ImGui::Button(color.A ? " " :"A", ImVec2(pixelButtonSize,pixelButtonSize)))
+                    {
+                       FileDialog.LoadedFile.Layers[this->currentLayer].framesArray[currentFrame].Pixels[x + (y*FileDialog.LoadedFile.layersResolution[this->currentLayer].x)]  = selectedColor_I;
+                    }
+                    
                     ImGui::PopStyleColor(2);
                     ImGui::PopStyleVar(2);
                     ImGui::PopID();
@@ -111,6 +114,28 @@ void VTncEditor::drawEvent() {
     ImGui::End();
 
     ImGui::Begin("Frames", nullptr, flags1);
+        static Magnum::Double lastframe = 0;
+        ImGui::SliderInt("Frame", &currentFrame, 0, FileDialog.LoadedFile.framesQuantity - 1);
+        ImGui::SameLine();
+        int _framesquantity = FileDialog.LoadedFile.framesQuantity;
+        ImGui::InputInt("Frames quantity", &_framesquantity);
+        FileDialog.LoadedFile.framesQuantity = char(_framesquantity);
+        ImGui::Checkbox("Play", &isPlaying);
+        lastframe += 1000.0/Magnum::Double(ImGui::GetIO().Framerate);
+        if (isPlaying && lastframe > (FileDialog.LoadedFile.Layers[currentLayer].framesArray[currentFrame].msDuration))
+        {
+            lastframe = 0;
+            currentFrame > (FileDialog.LoadedFile.framesQuantity -1)? currentFrame = 0 : currentFrame++;
+        }
+        
+        if (ImGui::Button("+", ImVec2(40.0f,40.0f)))
+            {
+                FileDialog.LoadedFile.colorsQuantity++;
+                RGBA newcolor;
+                newcolor.R = 0xFF; newcolor.G = 0xFF; newcolor.B = 0xFF; newcolor.A = 0xFF; 
+                FileDialog.LoadedFile.Colors[FileDialog.LoadedFile.colorsQuantity] = newcolor;
+            }
+
         for (size_t i = 0; i < FileDialog.LoadedFile.layersQuantity; i++)
         {
             ImGui::SameLine();
@@ -137,18 +162,20 @@ void VTncEditor::drawEvent() {
         static float pixelButtonSize = 40.0f;
         std::string text = "Selected color: ";
         ImGui::ColorPicker4((text + std::to_string(selectedColor_I)).c_str(), (float *) &selectedColor, ImGuiColorEditFlags_AlphaBar);
-        FileDialog.LoadedFile.Colors[selectedColor_I].R = int(selectedColor.x * 255);
-        FileDialog.LoadedFile.Colors[selectedColor_I].G = int(selectedColor.y * 255); 
-        FileDialog.LoadedFile.Colors[selectedColor_I].B = int(selectedColor.z * 255);
-        FileDialog.LoadedFile.Colors[selectedColor_I].A = int(selectedColor.w * 255);
-        
+        if (selectedColor_I != 255)
+        {   
+            FileDialog.LoadedFile.Colors[selectedColor_I].R = int(selectedColor.x * 255);
+            FileDialog.LoadedFile.Colors[selectedColor_I].G = int(selectedColor.y * 255); 
+            FileDialog.LoadedFile.Colors[selectedColor_I].B = int(selectedColor.z * 255);
+            FileDialog.LoadedFile.Colors[selectedColor_I].A = int(selectedColor.w * 255);    
+        }
         for (size_t i = 0; i < FileDialog.LoadedFile.colorsQuantity; i++)
         {
             RGBA currentColor = FileDialog.LoadedFile.Colors[i];
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, pixelButtonSize/2.0f);
             ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 2.0f);
             ImGui::PushStyleColor(ImGuiCol_Button,(ImVec4)ImColor(int(currentColor.R), int(currentColor.G), int(currentColor.B), int(currentColor.A)));
-            ImGui::PushStyleColor(ImGuiCol_Border,(ImVec4)ImColor(Color_Selected,Color_Selected,Color_Selected,Color_Selected));
+            ImGui::PushStyleColor(ImGuiCol_Border,(ImVec4)ImColor(i == selectedColor_I? Color_Selected : Color_Unselected,i == selectedColor_I? Color_Selected : Color_Unselected,i == selectedColor_I? Color_Selected : Color_Unselected, 255));
             ImGui::PushID(i);
             if (ImGui::Button(std::to_string(i).c_str(), ImVec2(pixelButtonSize,pixelButtonSize)))
             {
@@ -164,7 +191,14 @@ void VTncEditor::drawEvent() {
         ImGui::PushStyleColor(ImGuiCol_Border,(ImVec4)ImColor(Color_Selected,Color_Selected,Color_Selected,Color_Selected));
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, pixelButtonSize/2.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 2.0f);
-        ImGui::Button("+", ImVec2(pixelButtonSize,pixelButtonSize));
+        if (ImGui::Button("+", ImVec2(pixelButtonSize,pixelButtonSize)))
+        {
+            FileDialog.LoadedFile.colorsQuantity++;
+            RGBA newcolor;
+            newcolor.R = 0xFF; newcolor.G = 0xFF; newcolor.B = 0xFF; newcolor.A = 0xFF; 
+            FileDialog.LoadedFile.Colors[FileDialog.LoadedFile.colorsQuantity] = newcolor;
+        }
+        
         ImGui::PopStyleColor();
         ImGui::PopStyleVar(2);
     ImGui::End();
