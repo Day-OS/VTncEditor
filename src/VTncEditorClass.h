@@ -36,10 +36,12 @@ class VTncEditor: public Magnum::Platform::Application {
 
     private:
         Magnum::ImGuiIntegration::Context _imgui{Magnum::NoCreate};
+        VTNCRW VTNCRWLib;
         uint8_t currentLayer = 0;
+        int currentFrame = 0;
+        int zoom = 100;
         uint8_t selectedColor_I = 255;
         ImVec4 selectedColor;
-        int currentFrame = 0;
         bool isPlaying = false;
         Magnum::Float _floatValue = 0x72909aff;
         bool _showDemoWindow = true;

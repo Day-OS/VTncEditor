@@ -1,5 +1,7 @@
 #include "VTncEditorClass.h"
 #include "VTncEditorFileDialog.hpp"
+#define MOUSEDEBUG false
+#define DEBUG true
 
 VTncEditorFileDialog FileDialog;
 
@@ -33,7 +35,7 @@ ImGuiWindowFlags flags1 = ImGuiWindowFlags_NoNavFocus |
 			ImGuiWindowFlags_NoResize |
 			ImGuiWindowFlags_NoCollapse |
 			ImGuiWindowFlags_NoBringToFrontOnFocus | 
-			ImGuiWindowFlags_NoMove;
+			ImGuiWindowFlags_NoMove | ImGuiWindowFlags_HorizontalScrollbar;
 
 
 
@@ -47,6 +49,14 @@ void VTncEditor::drawEvent() {
     ImGuiID id = ImGui::GetID("Main");
     static bool firsttime = true;
     if(firsttime){
+        if(DEBUG){
+            Resolution EachLayerResolution[2];
+            EachLayerResolution[0].x = 2;
+            EachLayerResolution[0].y = 3;
+            EachLayerResolution[1].x = 4;
+            EachLayerResolution[1].y = 5;
+            FileDialog.LoadedFile = VTNCRWLib.create(2, EachLayerResolution, 8, 7);
+        }
         ImGui::DockBuilderRemoveNode(id);
         ImGui::DockBuilderAddNode(id);
         ImGui::DockBuilderSetNodeSize(id, viewport->Size);
@@ -74,8 +84,15 @@ void VTncEditor::drawEvent() {
                 if(ImGui::MenuItem("Save As")){
                     FileDialog.VTncEditorOpen(&currentfilepath, VTncEditorFileDialog::Mode::Save);
                 }
-            ImGui::EndMenu();
-            }
+                if(FileDialog.LoadedFile.isFile) if(ImGui::MenuItem("Close")){
+                    //It doesn't actually closes itself, but resets the preview to the new file menu
+                    FileDialog.LoadedFile.isFile = false;
+                }
+            ImGui::EndMenu();}
+            ImGui::Spacing();
+            ImGui::SliderInt("Zoom",&zoom,0,200,"%d%%");
+            ImGui::Spacing();
+            ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0/Magnum::Double(ImGui::GetIO().Framerate), Magnum::Double(ImGui::GetIO().Framerate));
         ImGui::EndMainMenuBar();
         }       
     ImGui::End();
@@ -84,7 +101,6 @@ void VTncEditor::drawEvent() {
     
     ImGui::Begin("Preview", nullptr, flags1);
         ImGuiIO& io = ImGui::GetIO();
-
         if (FileDialog.LoadedFile.isFile)
         {
             for (size_t y = 0; y < FileDialog.LoadedFile.layersResolution[this->currentLayer].y; y++){
@@ -93,15 +109,15 @@ void VTncEditor::drawEvent() {
                     u8c currentColorIndex =  FileDialog.LoadedFile.Layers[this->currentLayer].framesArray[currentFrame].Pixels[x + (y*FileDialog.LoadedFile.layersResolution[this->currentLayer].x)];
                     RGBA color = FileDialog.LoadedFile.Colors[currentColorIndex];
                     if(x > 0) ImGui::SameLine();
-                    float pixelButtonSize = 40.0f;
+                    float pixelButtonSize = 0.4f * zoom;
                     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, pixelButtonSize/2.0f);
                     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 2.0f);
                     ImGui::PushStyleColor(ImGuiCol_Button,(ImVec4)ImColor(int(color.R), int(color.G), int(color.B), int(color.A)));
                     ImGui::PushStyleColor(ImGuiCol_Border,(ImVec4)ImColor(0xFF,0xFF,0xFF,0xFF));
-                    ImGui::PushID(x + (y * FileDialog.LoadedFile.layersResolution[this->currentLayer].y));
+                    ImGui::PushID(x + (y * FileDialog.LoadedFile.layersResolution[this->currentLayer].x));
                     if (ImGui::Button(color.A ? " " :"A", ImVec2(pixelButtonSize,pixelButtonSize)))
-                    {
-                       FileDialog.LoadedFile.Layers[this->currentLayer].framesArray[currentFrame].Pixels[x + (y*FileDialog.LoadedFile.layersResolution[this->currentLayer].x)]  = selectedColor_I;
+                    {   
+                        FileDialog.LoadedFile.Layers[this->currentLayer].framesArray[currentFrame].Pixels[x + (y*FileDialog.LoadedFile.layersResolution[this->currentLayer].x)]  = selectedColor_I;
                     }
                     
                     ImGui::PopStyleColor(2);
@@ -110,102 +126,140 @@ void VTncEditor::drawEvent() {
                 }
             }
         }
-            ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0/Magnum::Double(ImGui::GetIO().Framerate), Magnum::Double(ImGui::GetIO().Framerate));
-    ImGui::End();
+        else{
+            static u8c layerQuantity = 1;
+            int int_layerQuantity = layerQuantity;
+            ImGui::InputInt("Layer quantity", &int_layerQuantity);
+            layerQuantity = int_layerQuantity ? int_layerQuantity : 1;
+            
+            static u8c colorsQuantity = 1;
+            int int_colorsQuantity = colorsQuantity;
+            ImGui::InputInt("Colors quantity", &int_colorsQuantity);
+            colorsQuantity = int_colorsQuantity ? int_colorsQuantity : 1;
+            
+            static u8c EndsAnimationAt = 1;
+            int int_EndsAnimationAt = EndsAnimationAt;
+            ImGui::InputInt("End Frame", &int_EndsAnimationAt);
+            EndsAnimationAt = int_EndsAnimationAt ? int_EndsAnimationAt : 1;
+            
+            Resolution EachLayerResolution[int_layerQuantity];
+            for (size_t i = 0; i < int_layerQuantity; i++)
+            {
+                ImGui::PushID(i);
+                    ImGui::Text(("Layer " + std::to_string(i) + " Resolution:").c_str());
+                    static int xy[2] = {1,1};
+                    ImGui::Text("Weight"); ImGui::SameLine();
+                    ImGui::InputInt2("", xy, ImGuiInputTextFlags_None); ImGui::SameLine();
+                    EachLayerResolution[i].x = xy[0];
+                    EachLayerResolution[i].y = xy[1];
+                ImGui::PopID();
+            }
+            
 
-    ImGui::Begin("Frames", nullptr, flags1);
-        static Magnum::Double lastframe = 0;
-        ImGui::SliderInt("Frame", &currentFrame, 0, FileDialog.LoadedFile.framesQuantity - 1);
-        ImGui::SameLine();
-        int _framesquantity = FileDialog.LoadedFile.framesQuantity;
-        ImGui::InputInt("Frames quantity", &_framesquantity);
-        FileDialog.LoadedFile.framesQuantity = char(_framesquantity);
-        ImGui::Checkbox("Play", &isPlaying);
-        lastframe += 1000.0/Magnum::Double(ImGui::GetIO().Framerate);
-        if (isPlaying && lastframe > (FileDialog.LoadedFile.Layers[currentLayer].framesArray[currentFrame].msDuration))
-        {
-            lastframe = 0;
-            currentFrame > (FileDialog.LoadedFile.framesQuantity -1)? currentFrame = 0 : currentFrame++;
+            /*
+            
+            static u8c EndsAnimationAt
+            */
+            if (ImGui::Button("Create!"))
+            {
+                Resolution newfile [1];
+                newfile[0].x = 4;
+                newfile[0].y = 5;
+                FileDialog.LoadedFile = VTNCRWLib.create(layerQuantity, EachLayerResolution, colorsQuantity, EndsAnimationAt);
+            }
+            
         }
-        
-        if (ImGui::Button("+", ImVec2(40.0f,40.0f)))
+    ImGui::End();
+    if(FileDialog.LoadedFile.isFile)
+    {
+        ImGui::Begin("Frames", nullptr, flags1);
+            static Magnum::Double lastframe = 0;    
+            ImGui::SliderInt("Timeline", &currentFrame, 0, FileDialog.LoadedFile.framesQuantity - 1);
+            int _framesquantity = FileDialog.LoadedFile.framesQuantity;
+            ImGui::InputInt("Ends at", &_framesquantity);
+            FileDialog.LoadedFile.framesQuantity = char(_framesquantity);
+            int _msDuration = FileDialog.LoadedFile.Layers[currentLayer].framesArray[currentFrame].msDuration;
+            ImGui::InputInt("Transition time", &_msDuration);
+            FileDialog.LoadedFile.Layers[currentLayer].framesArray[currentFrame].msDuration = u16c(_msDuration);
+            ImGui::Checkbox("Play", &isPlaying);
+            for (size_t i = 0; i < FileDialog.LoadedFile.layersQuantity; i++)
+            {
+                ImGui::SameLine();
+                ImGui::PushID(i);
+                if(ImGui::Button(("Layer: " + std::to_string(i)).c_str(), ImVec2(80.0f,20.0f))) currentLayer = i;
+                ImGui::PopID();
+            }
+
+            lastframe += 1000.0/Magnum::Double(ImGui::GetIO().Framerate);
+            if (isPlaying && lastframe > (FileDialog.LoadedFile.Layers[currentLayer].framesArray[currentFrame].msDuration))
+            {
+                lastframe = 0;
+                currentFrame > (FileDialog.LoadedFile.framesQuantity -1)? currentFrame = 0 : currentFrame++;
+            }
+
+            
+            if (MOUSEDEBUG){            
+                if (ImGui::IsMousePosValid())
+                    ImGui::Text("Mouse pos: (%g, %g)", io.MousePos.x, io.MousePos.y);
+                else
+                    ImGui::Text("Mouse pos: <INVALID>");
+                ImGui::Text("Mouse delta: (%g, %g)", io.MouseDelta.x, io.MouseDelta.y);
+
+                int count = IM_ARRAYSIZE(io.MouseDown);
+                ImGui::Text("Mouse down:");         for (int i = 0; i < count; i++) if (ImGui::IsMouseDown(i))      { ImGui::SameLine(); ImGui::Text("b%d (%.02f secs)", i, io.MouseDownDuration[i]); }
+                ImGui::Text("Mouse clicked:");      for (int i = 0; i < count; i++) if (ImGui::IsMouseClicked(i))   { ImGui::SameLine(); ImGui::Text("b%d (%d)", i, ImGui::GetMouseClickedCount(i)); }
+                ImGui::Text("Mouse released:");     for (int i = 0; i < count; i++) if (ImGui::IsMouseReleased(i))  { ImGui::SameLine(); ImGui::Text("b%d", i); }
+                ImGui::Text("Mouse wheel: %.1f", io.MouseWheel);
+                ImGui::Text("Pen Pressure: %.1f", io.PenPressure); // Note: currently unused
+
+            }
+        ImGui::End();
+
+
+        ImGui::Begin("Color picker", nullptr, flags1);
+            static float pixelButtonSize = 40.0f;
+            std::string text = "Selected color: ";
+            ImGui::ColorPicker4((text + std::to_string(selectedColor_I)).c_str(), (float *) &selectedColor, ImGuiColorEditFlags_AlphaBar);
+            if (selectedColor_I != 255)
+            {   
+                FileDialog.LoadedFile.Colors[selectedColor_I].R = int(selectedColor.x * 255);
+                FileDialog.LoadedFile.Colors[selectedColor_I].G = int(selectedColor.y * 255); 
+                FileDialog.LoadedFile.Colors[selectedColor_I].B = int(selectedColor.z * 255);
+                FileDialog.LoadedFile.Colors[selectedColor_I].A = int(selectedColor.w * 255);    
+            }
+            for (size_t i = 0; i < FileDialog.LoadedFile.colorsQuantity; i++)
+            {
+                RGBA currentColor = FileDialog.LoadedFile.Colors[i];
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, pixelButtonSize/2.0f);
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 2.0f);
+                ImGui::PushStyleColor(ImGuiCol_Button,(ImVec4)ImColor(int(currentColor.R), int(currentColor.G), int(currentColor.B), int(currentColor.A)));
+                ImGui::PushStyleColor(ImGuiCol_Border,(ImVec4)ImColor(i == selectedColor_I? Color_Selected : Color_Unselected,i == selectedColor_I? Color_Selected : Color_Unselected,i == selectedColor_I? Color_Selected : Color_Unselected, 255));
+                ImGui::PushID(i);
+                if (ImGui::Button(std::to_string(i).c_str(), ImVec2(pixelButtonSize,pixelButtonSize)))
+                {
+                    selectedColor_I = i;
+                    selectedColor = ImColor(FileDialog.LoadedFile.Colors[selectedColor_I].R,FileDialog.LoadedFile.Colors[selectedColor_I].G,FileDialog.LoadedFile.Colors[selectedColor_I].B,FileDialog.LoadedFile.Colors[selectedColor_I].A);
+                }
+                
+                ImGui::SameLine();
+                ImGui::PopStyleColor(2);
+                ImGui::PopStyleVar(2);
+                ImGui::PopID();
+            }
+            ImGui::PushStyleColor(ImGuiCol_Border,(ImVec4)ImColor(Color_Selected,Color_Selected,Color_Selected,Color_Selected));
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, pixelButtonSize/2.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 2.0f);
+            if (ImGui::Button("+", ImVec2(pixelButtonSize,pixelButtonSize)))
             {
                 FileDialog.LoadedFile.colorsQuantity++;
                 RGBA newcolor;
                 newcolor.R = 0xFF; newcolor.G = 0xFF; newcolor.B = 0xFF; newcolor.A = 0xFF; 
                 FileDialog.LoadedFile.Colors[FileDialog.LoadedFile.colorsQuantity] = newcolor;
             }
-
-        for (size_t i = 0; i < FileDialog.LoadedFile.layersQuantity; i++)
-        {
-            ImGui::SameLine();
-            ImGui::PushID(i);
-            if(ImGui::Button(("Layer: " + std::to_string(i)).c_str(), ImVec2(80.0f,20.0f))) currentLayer = i;
-            ImGui::PopID();
-        }
-        if (ImGui::IsMousePosValid())
-            ImGui::Text("Mouse pos: (%g, %g)", io.MousePos.x, io.MousePos.y);
-        else
-            ImGui::Text("Mouse pos: <INVALID>");
-        ImGui::Text("Mouse delta: (%g, %g)", io.MouseDelta.x, io.MouseDelta.y);
-
-        int count = IM_ARRAYSIZE(io.MouseDown);
-        ImGui::Text("Mouse down:");         for (int i = 0; i < count; i++) if (ImGui::IsMouseDown(i))      { ImGui::SameLine(); ImGui::Text("b%d (%.02f secs)", i, io.MouseDownDuration[i]); }
-        ImGui::Text("Mouse clicked:");      for (int i = 0; i < count; i++) if (ImGui::IsMouseClicked(i))   { ImGui::SameLine(); ImGui::Text("b%d (%d)", i, ImGui::GetMouseClickedCount(i)); }
-        ImGui::Text("Mouse released:");     for (int i = 0; i < count; i++) if (ImGui::IsMouseReleased(i))  { ImGui::SameLine(); ImGui::Text("b%d", i); }
-        ImGui::Text("Mouse wheel: %.1f", io.MouseWheel);
-        ImGui::Text("Pen Pressure: %.1f", io.PenPressure); // Note: currently unused
-
-    ImGui::End();
-
-    ImGui::Begin("Color picker", nullptr, flags1);
-        static float pixelButtonSize = 40.0f;
-        std::string text = "Selected color: ";
-        ImGui::ColorPicker4((text + std::to_string(selectedColor_I)).c_str(), (float *) &selectedColor, ImGuiColorEditFlags_AlphaBar);
-        if (selectedColor_I != 255)
-        {   
-            FileDialog.LoadedFile.Colors[selectedColor_I].R = int(selectedColor.x * 255);
-            FileDialog.LoadedFile.Colors[selectedColor_I].G = int(selectedColor.y * 255); 
-            FileDialog.LoadedFile.Colors[selectedColor_I].B = int(selectedColor.z * 255);
-            FileDialog.LoadedFile.Colors[selectedColor_I].A = int(selectedColor.w * 255);    
-        }
-        for (size_t i = 0; i < FileDialog.LoadedFile.colorsQuantity; i++)
-        {
-            RGBA currentColor = FileDialog.LoadedFile.Colors[i];
-            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, pixelButtonSize/2.0f);
-            ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 2.0f);
-            ImGui::PushStyleColor(ImGuiCol_Button,(ImVec4)ImColor(int(currentColor.R), int(currentColor.G), int(currentColor.B), int(currentColor.A)));
-            ImGui::PushStyleColor(ImGuiCol_Border,(ImVec4)ImColor(i == selectedColor_I? Color_Selected : Color_Unselected,i == selectedColor_I? Color_Selected : Color_Unselected,i == selectedColor_I? Color_Selected : Color_Unselected, 255));
-            ImGui::PushID(i);
-            if (ImGui::Button(std::to_string(i).c_str(), ImVec2(pixelButtonSize,pixelButtonSize)))
-            {
-                selectedColor_I = i;
-                selectedColor = ImColor(FileDialog.LoadedFile.Colors[selectedColor_I].R,FileDialog.LoadedFile.Colors[selectedColor_I].G,FileDialog.LoadedFile.Colors[selectedColor_I].B,FileDialog.LoadedFile.Colors[selectedColor_I].A);
-            }
             
-            ImGui::SameLine();
-            ImGui::PopStyleColor(2);
+            ImGui::PopStyleColor();
             ImGui::PopStyleVar(2);
-            ImGui::PopID();
-        }
-        ImGui::PushStyleColor(ImGuiCol_Border,(ImVec4)ImColor(Color_Selected,Color_Selected,Color_Selected,Color_Selected));
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, pixelButtonSize/2.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 2.0f);
-        if (ImGui::Button("+", ImVec2(pixelButtonSize,pixelButtonSize)))
-        {
-            FileDialog.LoadedFile.colorsQuantity++;
-            RGBA newcolor;
-            newcolor.R = 0xFF; newcolor.G = 0xFF; newcolor.B = 0xFF; newcolor.A = 0xFF; 
-            FileDialog.LoadedFile.Colors[FileDialog.LoadedFile.colorsQuantity] = newcolor;
-        }
-        
-        ImGui::PopStyleColor();
-        ImGui::PopStyleVar(2);
-    ImGui::End();
-    
-    if(false && _showDemoWindow) {
-        ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
-        ImGui::ShowDemoWindow();
+        ImGui::End();
     }
 
     _imgui.updateApplicationCursor(*this);
