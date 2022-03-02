@@ -1,10 +1,12 @@
 #include "VTncEditorClass.h"
 #include "VTncEditorFileDialog.hpp"
 #define MOUSEDEBUG false
-#define DEBUG true
+#define DEBUG false
 
 VTncEditorFileDialog FileDialog;
-
+VTNCFile * LoadedFile = &FileDialog.LoadedFile;
+//IMPLEMENTING THIS FOR ICONS IN THE FUTURE
+//Magnum::Platform::Sdl2Application::setWindowIcon
 VTncEditor::VTncEditor(const Arguments& arguments): Magnum::Platform::Application{arguments,
     Configuration{}.setTitle("VTncEditor").setWindowFlags(Configuration::WindowFlag::Resizable)}
 {
@@ -22,14 +24,14 @@ VTncEditor::VTncEditor(const Arguments& arguments): Magnum::Platform::Applicatio
 }
 char* currentfilepath = nullptr;
 
-ImGuiWindowFlags flagsmenu = ImGuiWindowFlags_NoNavFocus |                                                      // so turn off everything that would make it act like a window
-            ImGuiWindowFlags_NoDocking |
-            ImGuiWindowFlags_MenuBar |
-			ImGuiWindowFlags_NoCollapse |
-            ImGuiWindowFlags_NoResize |
-			ImGuiWindowFlags_NoBringToFrontOnFocus | 
-            ImGuiWindowFlags_NoBackground |
-            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar;
+ImGuiWindowFlags flagsmenu = ImGuiWindowFlags_NoDocking |
+                             ImGuiWindowFlags_MenuBar |
+                             ImGuiWindowFlags_NoNavFocus |                                                      // so turn off everything that would make it act like a window
+                             ImGuiWindowFlags_NoCollapse |
+                             ImGuiWindowFlags_NoResize |
+                             ImGuiWindowFlags_NoBringToFrontOnFocus | 
+                             ImGuiWindowFlags_NoBackground |
+                             ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar;
 
 ImGuiWindowFlags flags1 = ImGuiWindowFlags_NoNavFocus |
 			ImGuiWindowFlags_NoResize |
@@ -48,7 +50,15 @@ void VTncEditor::drawEvent() {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGuiID id = ImGui::GetID("Main");
     static bool firsttime = true;
+    
+    ImGui::SetNextWindowPos(viewport->Pos);
+    ImGui::SetNextWindowSize(viewport->Size);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0)); 
+    ImGui::Begin("Menu",nullptr, flagsmenu);
+    ImGui::PopStyleVar();
+    ImGui::DockSpace(id, ImVec2(0.0f,0.0f));
     if(firsttime){
+        firsttime = false;
         if(DEBUG){
             Resolution EachLayerResolution[2];
             EachLayerResolution[0].x = 2;
@@ -58,69 +68,80 @@ void VTncEditor::drawEvent() {
             FileDialog.LoadedFile = VTNCRWLib.create(2, EachLayerResolution, 8, 7);
         }
         ImGui::DockBuilderRemoveNode(id);
-        ImGui::DockBuilderAddNode(id);
+        ImGui::DockBuilderAddNode(id, ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_DockSpace);
         ImGui::DockBuilderSetNodeSize(id, viewport->Size);
-        ImGuiID dock1 = ImGui::DockBuilderSplitNode(id, ImGuiDir_Left, 0.7f, nullptr, &id);
         ImGuiID dock2 = ImGui::DockBuilderSplitNode(id, ImGuiDir_Right, 0.3f, nullptr, &id);
-        ImGuiID dock3 = ImGui::DockBuilderSplitNode(dock1, ImGuiDir_Down, 0.3f, nullptr, &dock1);
-        ImGui::DockBuilderDockWindow("Preview", dock1);
+        ImGuiID dock3 = ImGui::DockBuilderSplitNode(id, ImGuiDir_Down, 0.3f, nullptr, &id);
+        ImGui::DockBuilderDockWindow("Preview", id);
         ImGui::DockBuilderDockWindow("Color picker", dock2);
         ImGui::DockBuilderDockWindow("Frames", dock3);
         ImGui::DockBuilderFinish(id);
-        firsttime = false;
+        
     }
-    ImGui::DockBuilderGetNode(id)->SetLocalFlags(ImGuiDockNodeFlags_PassthruCentralNode);
-    ImGui::DockBuilderSetNodeSize(id, viewport->WorkSize);
-    ImGui::DockBuilderSetNodePos(id,viewport->WorkPos);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));    
+    
+
+
 
     
-    ImGui::Begin("Menu",nullptr, flagsmenu);
         if(ImGui::BeginMainMenuBar()){
             if(ImGui::BeginMenu("File")){
+                
                 if(ImGui::MenuItem("Load")){
                     FileDialog.VTncEditorOpen(&currentfilepath, VTncEditorFileDialog::Mode::Load);
+                    cachedFramesSize = LoadedFile->framesQuantity - 1;
                 }
-                if(ImGui::MenuItem("Save As")){
-                    FileDialog.VTncEditorOpen(&currentfilepath, VTncEditorFileDialog::Mode::Save);
-                }
-                if(FileDialog.LoadedFile.isFile) if(ImGui::MenuItem("Close")){
-                    //It doesn't actually closes itself, but resets the preview to the new file menu
-                    FileDialog.LoadedFile.isFile = false;
+                if(LoadedFile->isFile) 
+                    {if(ImGui::MenuItem("Save As")){
+                        FileDialog.VTncEditorOpen(&currentfilepath, VTncEditorFileDialog::Mode::Save);
+                    }
+                    if(ImGui::MenuItem("Close")){
+                        //It doesn't actually closes itself, but resets the preview to the new file menu
+                        LoadedFile->isFile = false;
+                        cachedFramesSize = 1;
+                    }
                 }
             ImGui::EndMenu();}
             ImGui::Spacing();
-            ImGui::SliderInt("Zoom",&zoom,0,200,"%d%%");
+            ImGui::SliderInt("Zoom",&zoom,1,200,"%d%%");
+            ImGui::Spacing();
+            ImGui::Checkbox("Enable outline", &PreviewWithOutline);
             ImGui::Spacing();
             ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0/Magnum::Double(ImGui::GetIO().Framerate), Magnum::Double(ImGui::GetIO().Framerate));
         ImGui::EndMainMenuBar();
         }       
     ImGui::End();
     
-    ImGui::PopStyleVar();
-    
     ImGui::Begin("Preview", nullptr, flags1);
         ImGuiIO& io = ImGui::GetIO();
-        if (FileDialog.LoadedFile.isFile)
+        if (LoadedFile->isFile)
         {
-            for (size_t y = 0; y < FileDialog.LoadedFile.layersResolution[this->currentLayer].y; y++){
-                for (size_t x = 0; x < FileDialog.LoadedFile.layersResolution[this->currentLayer].x; x++)
+            for (size_t y = 0; y < LoadedFile->layersResolution[currentLayer].y; y++){
+                for (size_t x = 0; x < LoadedFile->layersResolution[currentLayer].x; x++)
                 {
-                    u8c currentColorIndex =  FileDialog.LoadedFile.Layers[this->currentLayer].framesArray[currentFrame].Pixels[x + (y*FileDialog.LoadedFile.layersResolution[this->currentLayer].x)];
-                    RGBA color = FileDialog.LoadedFile.Colors[currentColorIndex];
+                    if(currentFrame > cachedFramesSize){ 
+                        Layer* _layer = &LoadedFile->Layers[currentLayer];
+                        _layer->framesArray[currentFrame] = _layer->framesArray[cachedFramesSize];        
+                        cachedFramesSize = currentFrame;
+                    }
+                    u8c currentColorIndex =  LoadedFile->Layers[currentLayer].framesArray[currentFrame].Pixels[x + (y*LoadedFile->layersResolution[currentLayer].x)];
+                    RGBA color = LoadedFile->Colors[currentColorIndex];
                     if(x > 0) ImGui::SameLine();
-                    float pixelButtonSize = 0.4f * zoom;
+                    float pixelButtonSize = 0.0004f * (ImGui::GetWindowHeight() + ImGui::GetWindowWidth()/2) * zoom;
+                    ImVec4 ButtonColor = (ImVec4)ImColor(int(color.R), int(color.G), int(color.B), int(color.A));
                     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, pixelButtonSize/2.0f);
                     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 2.0f);
-                    ImGui::PushStyleColor(ImGuiCol_Button,(ImVec4)ImColor(int(color.R), int(color.G), int(color.B), int(color.A)));
-                    ImGui::PushStyleColor(ImGuiCol_Border,(ImVec4)ImColor(0xFF,0xFF,0xFF,0xFF));
-                    ImGui::PushID(x + (y * FileDialog.LoadedFile.layersResolution[this->currentLayer].x));
-                    if (ImGui::Button(color.A ? " " :"A", ImVec2(pixelButtonSize,pixelButtonSize)))
+                    ImGui::PushStyleColor(ImGuiCol_Button, ButtonColor);
+                    ImGui::PushStyleColor(ImGuiCol_Border,(ImVec4)ImColor(0xFF,0xFF,0xFF, PreviewWithOutline? 0xFF :0));
+                    ImGui::PushID(x + (y * LoadedFile->layersResolution[currentLayer].x));
+                    ButtonColor.w = ButtonColor.w/2;
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ButtonColor);
+                    bool ButtonClicked = ImGui::Button(color.A ? " " :"A", ImVec2(pixelButtonSize,pixelButtonSize));
+                    if (ButtonClicked || ((ImGui::IsItemHovered()|| ImGui::IsItemClicked()) && ImGui::IsMouseDown(ImGuiMouseButton_Left)))
                     {   
-                        FileDialog.LoadedFile.Layers[this->currentLayer].framesArray[currentFrame].Pixels[x + (y*FileDialog.LoadedFile.layersResolution[this->currentLayer].x)]  = selectedColor_I;
+                        LoadedFile->Layers[currentLayer].framesArray[currentFrame].Pixels[x + (y*LoadedFile->layersResolution[currentLayer].x)]  = selectedColor_I;
                     }
                     
-                    ImGui::PopStyleColor(2);
+                    ImGui::PopStyleColor(3);
                     ImGui::PopStyleVar(2);
                     ImGui::PopID();
                 }
@@ -154,12 +175,6 @@ void VTncEditor::drawEvent() {
                     EachLayerResolution[i].y = xy[1];
                 ImGui::PopID();
             }
-            
-
-            /*
-            
-            static u8c EndsAnimationAt
-            */
             if (ImGui::Button("Create!"))
             {
                 Resolution newfile [1];
@@ -170,19 +185,19 @@ void VTncEditor::drawEvent() {
             
         }
     ImGui::End();
-    if(FileDialog.LoadedFile.isFile)
+    if(LoadedFile->isFile)
     {
         ImGui::Begin("Frames", nullptr, flags1);
             static Magnum::Double lastframe = 0;    
-            ImGui::SliderInt("Timeline", &currentFrame, 0, FileDialog.LoadedFile.framesQuantity - 1);
-            int _framesquantity = FileDialog.LoadedFile.framesQuantity;
+            ImGui::SliderInt("Timeline", &currentFrame, 0, LoadedFile->framesQuantity - 1);
+            int _framesquantity = LoadedFile->framesQuantity;
             ImGui::InputInt("Ends at", &_framesquantity);
-            FileDialog.LoadedFile.framesQuantity = char(_framesquantity);
-            int _msDuration = FileDialog.LoadedFile.Layers[currentLayer].framesArray[currentFrame].msDuration;
+            LoadedFile->framesQuantity = char(_framesquantity);
+            int _msDuration = LoadedFile->Layers[currentLayer].framesArray[currentFrame].msDuration;
             ImGui::InputInt("Transition time", &_msDuration);
-            FileDialog.LoadedFile.Layers[currentLayer].framesArray[currentFrame].msDuration = u16c(_msDuration);
+            LoadedFile->Layers[currentLayer].framesArray[currentFrame].msDuration = u16c(_msDuration);
             ImGui::Checkbox("Play", &isPlaying);
-            for (size_t i = 0; i < FileDialog.LoadedFile.layersQuantity; i++)
+            for (size_t i = 0; i < LoadedFile->layersQuantity; i++)
             {
                 ImGui::SameLine();
                 ImGui::PushID(i);
@@ -191,10 +206,10 @@ void VTncEditor::drawEvent() {
             }
 
             lastframe += 1000.0/Magnum::Double(ImGui::GetIO().Framerate);
-            if (isPlaying && lastframe > (FileDialog.LoadedFile.Layers[currentLayer].framesArray[currentFrame].msDuration))
+            if (isPlaying && lastframe > (LoadedFile->Layers[currentLayer].framesArray[currentFrame].msDuration))
             {
                 lastframe = 0;
-                currentFrame > (FileDialog.LoadedFile.framesQuantity -1)? currentFrame = 0 : currentFrame++;
+                currentFrame > (LoadedFile->framesQuantity -1)? currentFrame = 0 : currentFrame++;
             }
 
             
@@ -222,14 +237,14 @@ void VTncEditor::drawEvent() {
             ImGui::ColorPicker4((text + std::to_string(selectedColor_I)).c_str(), (float *) &selectedColor, ImGuiColorEditFlags_AlphaBar);
             if (selectedColor_I != 255)
             {   
-                FileDialog.LoadedFile.Colors[selectedColor_I].R = int(selectedColor.x * 255);
-                FileDialog.LoadedFile.Colors[selectedColor_I].G = int(selectedColor.y * 255); 
-                FileDialog.LoadedFile.Colors[selectedColor_I].B = int(selectedColor.z * 255);
-                FileDialog.LoadedFile.Colors[selectedColor_I].A = int(selectedColor.w * 255);    
+                LoadedFile->Colors[selectedColor_I].R = int(selectedColor.x * 255);
+                LoadedFile->Colors[selectedColor_I].G = int(selectedColor.y * 255); 
+                LoadedFile->Colors[selectedColor_I].B = int(selectedColor.z * 255);
+                LoadedFile->Colors[selectedColor_I].A = int(selectedColor.w * 255);    
             }
-            for (size_t i = 0; i < FileDialog.LoadedFile.colorsQuantity; i++)
+            for (size_t i = 0; i < LoadedFile->colorsQuantity; i++)
             {
-                RGBA currentColor = FileDialog.LoadedFile.Colors[i];
+                RGBA currentColor = LoadedFile->Colors[i];
                 ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, pixelButtonSize/2.0f);
                 ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 2.0f);
                 ImGui::PushStyleColor(ImGuiCol_Button,(ImVec4)ImColor(int(currentColor.R), int(currentColor.G), int(currentColor.B), int(currentColor.A)));
@@ -238,7 +253,7 @@ void VTncEditor::drawEvent() {
                 if (ImGui::Button(std::to_string(i).c_str(), ImVec2(pixelButtonSize,pixelButtonSize)))
                 {
                     selectedColor_I = i;
-                    selectedColor = ImColor(FileDialog.LoadedFile.Colors[selectedColor_I].R,FileDialog.LoadedFile.Colors[selectedColor_I].G,FileDialog.LoadedFile.Colors[selectedColor_I].B,FileDialog.LoadedFile.Colors[selectedColor_I].A);
+                    selectedColor = ImColor(LoadedFile->Colors[selectedColor_I].R,LoadedFile->Colors[selectedColor_I].G,LoadedFile->Colors[selectedColor_I].B,LoadedFile->Colors[selectedColor_I].A);
                 }
                 
                 ImGui::SameLine();
@@ -251,10 +266,10 @@ void VTncEditor::drawEvent() {
             ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 2.0f);
             if (ImGui::Button("+", ImVec2(pixelButtonSize,pixelButtonSize)))
             {
-                FileDialog.LoadedFile.colorsQuantity++;
+                LoadedFile->colorsQuantity++;
                 RGBA newcolor;
                 newcolor.R = 0xFF; newcolor.G = 0xFF; newcolor.B = 0xFF; newcolor.A = 0xFF; 
-                FileDialog.LoadedFile.Colors[FileDialog.LoadedFile.colorsQuantity] = newcolor;
+                LoadedFile->Colors[LoadedFile->colorsQuantity] = newcolor;
             }
             
             ImGui::PopStyleColor();

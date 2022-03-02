@@ -40,12 +40,12 @@ class VTncEditor: public Magnum::Platform::Application {
         uint8_t currentLayer = 0;
         int currentFrame = 0;
         int zoom = 100;
+        int cachedFramesSize = 1;
         uint8_t selectedColor_I = 255;
         ImVec4 selectedColor;
         bool isPlaying = false;
+        bool PreviewWithOutline = true;
         Magnum::Float _floatValue = 0x72909aff;
-        bool _showDemoWindow = true;
-        bool _showAnotherWindow = false;
         Magnum::Color4 _clearColor = 0x72909aff_rgbaf;
         enum Theme{
             Color_Unselected = 0x00,
