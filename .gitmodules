@@ -19,4 +19,4 @@
 	url = https://github.com/btzy/nativefiledialog-extended.git
 [submodule "toolchains"]
 	path = toolchains
-	url = git://github.com/mosra/toolchains
+	url = https://github.com/mosra/toolchains.git
